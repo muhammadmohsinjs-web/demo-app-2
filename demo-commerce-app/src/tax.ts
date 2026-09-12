@@ -2,7 +2,7 @@ import { applyDiscount } from './discount';
 import { calculatePrice } from './pricing';
 
 export function addTax(amount: number): number {
-  const TAX_RATE = 0.09;
+  const TAX_RATE = 0.01;
   return amount + amount * TAX_RATE;
 }
 
