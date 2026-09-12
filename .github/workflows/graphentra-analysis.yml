@@ -1,45 +1,103 @@
-name: Graphentra Analysis
+name: Graphentra Change Impact Analysis
 
 on:
-  push:
-  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: graphentra-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   analyze:
-    name: Build and run Graphentra analyzer
+    name: Run Graphentra Impact Analysis
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out demo application
-        uses: actions/checkout@v7
+      - name: Check out target repository
+        uses: actions/checkout@v4
         with:
-          path: demo-app
+          path: target-repo
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Check out Graphentra analyzer
-        uses: actions/checkout@v7
+      - name: Ensure PR base commit is fetched
+        working-directory: target-repo
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.sha }}
+
+      - name: Check out Graphentra Analyzer
+        uses: actions/checkout@v4
         with:
           repository: muhammadmohsinjs-web/hackathon-graphentra-analyzer
           ref: main
           path: graphentra-analyzer
+          persist-credentials: false
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: graphentra-analyzer/package-lock.json
 
-      - name: Install analyzer dependencies
+      - name: Install and build analyzer
         working-directory: graphentra-analyzer
-        run: npm ci
+        run: |
+          npm ci
+          npm run build
 
-      - name: Build analyzer
-        working-directory: graphentra-analyzer
-        run: npm run build
+      - name: Install and build target demo application
+        working-directory: target-repo/demo-commerce-app
+        run: |
+          npm ci
+          npm run build
 
-      - name: Run analyzer
-        working-directory: graphentra-analyzer
-        run: npm start -- "$GITHUB_WORKSPACE/demo-app/demo-commerce-app"
+      - name: Run Graphentra Analysis
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          TARGET_DIR: ${{ github.workspace }}/target-repo/demo-commerce-app
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node "$GITHUB_WORKSPACE/graphentra-analyzer/dist/cli.js" analyze \
+            --target "$TARGET_DIR" \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA"
+
+      - name: Upload Graphentra Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphentra-artifacts
+          path: |
+            target-repo/demo-commerce-app/.graphentra/technical-graph.json
+            target-repo/demo-commerce-app/.graphentra/analysis.json
+            target-repo/demo-commerce-app/.graphentra/report.md
+          if-no-files-found: ignore
+          include-hidden-files: true
+
+      - name: Write Job Summary
+        if: always()
+        run: |
+          REPORT_PATH="$GITHUB_WORKSPACE/target-repo/demo-commerce-app/.graphentra/report.md"
+          if [ -f "$REPORT_PATH" ]; then
+            cat "$REPORT_PATH" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Graphentra report was not generated." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Update Sticky Pull Request Comment
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const upsertPrComment = require(`${process.env.GITHUB_WORKSPACE}/graphentra-analyzer/scripts/upsert-pr-comment.cjs`);
+            const reportPath = `${process.env.GITHUB_WORKSPACE}/target-repo/demo-commerce-app/.graphentra/report.md`;
+            await upsertPrComment({ github, context, core, reportPath });
