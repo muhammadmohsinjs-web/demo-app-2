@@ -10,7 +10,7 @@ concurrency:
 
 permissions:
   contents: read
-  issues: write
+  pull-requests: write
 
 jobs:
   analyze:
@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Check out target repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: target-repo
           ref: ${{ github.event.pull_request.head.sha }}
@@ -32,7 +32,7 @@ jobs:
           git fetch origin ${{ github.event.pull_request.base.sha }}
 
       - name: Check out Graphentra Analyzer
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: muhammadmohsinjs-web/hackathon-graphentra-analyzer
           ref: main
@@ -40,7 +40,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload Graphentra Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: graphentra-artifacts
           path: |
@@ -88,14 +88,14 @@ jobs:
         run: |
           REPORT_PATH="$GITHUB_WORKSPACE/target-repo/demo-commerce-app/.graphentra/report.md"
           if [ -f "$REPORT_PATH" ]; then
-            cat "$REPORT_PATH" >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT_PATH" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Graphentra report was not generated." >> $GITHUB_STEP_SUMMARY
+            echo "Graphentra report was not generated." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Update Sticky Pull Request Comment
         if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const upsertPrComment = require(`${process.env.GITHUB_WORKSPACE}/graphentra-analyzer/scripts/upsert-pr-comment.cjs`);
