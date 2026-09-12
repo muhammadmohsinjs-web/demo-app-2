@@ -1,3 +1,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+.graphentra/technical-graph.json
+.graphentra/analysis.json
+.graphentra/report.md

@@ -1,0 +1,62 @@
+{
+  "globalContext": {
+    "applicationName": "Demo Commerce",
+    "applicationType": "Ecommerce",
+    "description": "A small commerce application used to demonstrate change-impact analysis.",
+    "businessTerminology": {
+      "order total": "The final payable order amount after pricing, discount, and tax rules.",
+      "checkout": "The process that calculates and confirms the final order."
+    },
+    "businessRules": [
+      "Discount is applied before tax.",
+      "Checkout depends on the final order total.",
+      "Invoice calculation uses pricing and tax."
+    ]
+  },
+  "entities": {
+    "src/pricing.ts#calculatePrice": {
+      "businessArea": "Pricing",
+      "purpose": "Calculates base price from unit price and quantity"
+    },
+    "src/discount.ts#applyDiscount": {
+      "businessArea": "Pricing",
+      "purpose": "Applies a percentage discount to an amount"
+    },
+    "src/tax.ts#addTax": {
+      "businessArea": "Pricing",
+      "purpose": "Adds tax to a monetary amount"
+    },
+    "src/pricing.ts#applyPricing": {
+      "businessArea": "Pricing",
+      "purpose": "Calculates discounted pricing before tax"
+    },
+    "src/pricing.ts#applyPlainPricing": {
+      "businessArea": "Pricing",
+      "purpose": "Calculates pricing without discount"
+    },
+    "src/tax.ts#priceWithTaxAndDiscount": {
+      "businessArea": "Pricing",
+      "purpose": "Calculates discounted pricing including tax"
+    },
+    "src/order.ts#buildOrderTotal": {
+      "businessArea": "Orders",
+      "purpose": "Builds the final discounted order total including tax"
+    },
+    "src/order.ts#generateInvoice": {
+      "businessArea": "Orders",
+      "purpose": "Calculates invoice pricing including tax without discount"
+    },
+    "src/notifications.ts#notifyOrderConfirmed": {
+      "businessArea": "Notifications",
+      "purpose": "Produces an order confirmation message"
+    },
+    "src/notifications.ts#notifyOrderShipped": {
+      "businessArea": "Notifications",
+      "purpose": "Produces an order shipped message"
+    },
+    "src/checkout.ts#checkout": {
+      "businessArea": "Checkout",
+      "purpose": "Calculates the final order amount and confirms the order"
+    }
+  }
+}
