@@ -7,8 +7,8 @@ permissions:
   contents: read
 
 jobs:
-  connect-repositories:
-    name: Connect repositories
+  analyze:
+    name: Build and run Graphentra analyzer
     runs-on: ubuntu-latest
 
     steps:
@@ -24,8 +24,21 @@ jobs:
           ref: main
           path: graphentra-analyzer
 
-      - name: Verify repository connection
-        run: |
-          test -d demo-app/demo-commerce-app
-          test -f graphentra-analyzer/README.md
-          echo "Demo application and Graphentra analyzer are connected."
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: graphentra-analyzer/package-lock.json
+
+      - name: Install analyzer dependencies
+        working-directory: graphentra-analyzer
+        run: npm ci
+
+      - name: Build analyzer
+        working-directory: graphentra-analyzer
+        run: npm run build
+
+      - name: Run analyzer
+        working-directory: graphentra-analyzer
+        run: npm start -- "$GITHUB_WORKSPACE/demo-app/demo-commerce-app"
