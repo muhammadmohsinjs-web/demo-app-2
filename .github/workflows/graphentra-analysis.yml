@@ -1,0 +1,31 @@
+name: Graphentra Analysis
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  connect-repositories:
+    name: Connect repositories
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out demo application
+        uses: actions/checkout@v7
+        with:
+          path: demo-app
+
+      - name: Check out Graphentra analyzer
+        uses: actions/checkout@v7
+        with:
+          repository: muhammadmohsinjs-web/hackathon-graphentra-analyzer
+          ref: main
+          path: graphentra-analyzer
+
+      - name: Verify repository connection
+        run: |
+          test -d demo-app/demo-commerce-app
+          test -f graphentra-analyzer/README.md
+          echo "Demo application and Graphentra analyzer are connected."
